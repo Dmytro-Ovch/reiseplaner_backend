@@ -72,12 +72,18 @@ const seedDatabase = async () => {
       console.log(chalk.gray(`User erstellt: ${username} (_id=${user._id})`));
     }
 
-    // Travels erstellen
+    // Travels erstellen (mehrere Städte pro Travel)
     for (const user of users) {
       const numTravels = randomInt(1, 5); // 1-5 Travels pro User
       for (let i = 0; i < numTravels; i++) {
+        const numPoints = randomInt(1, 4); // 1-4 Städte pro Travel
+        const points = [];
+
+        for (let j = 0; j < numPoints; j++) {
         const loc = locations[randomInt(0, locations.length - 1)];
         const city = loc.cities[randomInt(0, loc.cities.length - 1)];
+        points.push({ city, country: loc.country });
+      }
 
         const startDate = new Date();
         startDate.setDate(startDate.getDate() + randomInt(-30, 30));
@@ -88,15 +94,14 @@ const seedDatabase = async () => {
 
         const travel = await Travel.create({
           user: user._id,
-          country: loc.country,
-          city,
+          points,
           startDate,
           endDate,
           photos,
         });
 
         user.travels.push(travel._id);
-        console.log(chalk.gray(`Travel erstellt für ${user.username}: ${city}, ${loc.country} (id=${travel.id})`));
+        console.log(chalk.gray(`Travel erstellt für ${user.username}: ${points.map(p => p.city).join(", ")} (${travel.id})`));
       }
       await user.save();
     }

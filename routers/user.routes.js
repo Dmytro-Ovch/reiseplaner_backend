@@ -8,7 +8,7 @@ const userRouter = Router();
 // Auth-Routen
 userRouter.post("/register", registerUser);      // Registrierung
 userRouter.post("/login", login);               // Login
-userRouter.post("/logout", authenticate, logout); // Logout gesichert
+userRouter.delete("/logout", authenticate, logout); // Logout gesichert
 userRouter.get("/me", authenticate, me);       // Eigene Daten abrufen
 
 // User-Routen (Admin oder authentifiziert)

@@ -5,43 +5,10 @@ import User from "../models/user.model.js";
 const getTravels = async (_req, res, next) => {
   try {
     const entries = await Travel.find()
-      .populate("user", "username role") // User-Daten mitgeben
+      .populate("user", "username role")
       .sort({ createdAt: -1 })
       .lean();
     res.json({ data: entries });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Neue Reise anlegen
-const createTravel = async (req, res, next) => {
-  try {
-    const { userId, country, city, startDate, endDate, photos } = req.body;
-
-    if (!userId || !country || !city || !startDate || !endDate) {
-      return res.status(400).json({ message: "Pflichtfelder fehlen" });
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User nicht gefunden" });
-    }
-
-    const newTravel = await Travel.create({
-      user: user._id,
-      country,
-      city,
-      startDate,
-      endDate,
-      photos,
-    });
-
-    // Reise in User speichern
-    user.travels.push(newTravel._id);
-    await user.save();
-
-    res.status(201).json({ data: newTravel });
   } catch (err) {
     next(err);
   }
@@ -51,37 +18,69 @@ const createTravel = async (req, res, next) => {
 const getOneTravel = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const entry = await Travel.findById(id)
-      .populate("user", "username role")
-      .lean();
-
-    if (!entry) {
-      return res.status(404).json({ message: "Eintrag nicht gefunden" });
-    }
-
+    const entry = await Travel.findById(id).populate("user", "username role").lean();
+    if (!entry) return res.status(404).json({ message: "Eintrag nicht gefunden" });
     res.json({ data: entry });
   } catch (err) {
     next(err);
   }
 };
 
-// Reise updaten
+// Neue Reise erstellen (angepasst für points: [{city,country}])
+const createTravel = async (req, res, next) => {
+  try {
+    const { points, startDate, endDate, photos } = req.body;
+
+    if (!points || !Array.isArray(points) || points.length === 0) {
+      return res.status(400).json({ message: "Mindestens eine Stadt erforderlich" });
+    }
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "Start- und Enddatum erforderlich" });
+    }
+
+    const newTravel = await Travel.create({
+      user: req.user._id, // User aus JWT
+      points,
+      startDate,
+      endDate,
+      photos,
+    });
+
+    // User-Dokument aktualisieren
+    await User.findByIdAndUpdate(req.user._id, {
+    $push: { travels: newTravel._id }
+    });
+
+    res.status(201).json({ data: newTravel });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Reise aktualisieren
 const updateTravel = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const updatedEntry = await Travel.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    })
-      .populate("user", "username role")
-      .lean();
+    const travel = await Travel.findById(id);
+    if (!travel) return res.status(404).json({ message: "Eintrag nicht gefunden" });
 
-    if (!updatedEntry) {
-      return res.status(404).json({ message: "Eintrag nicht gefunden" });
+    // Prüfen, ob Self oder Admin
+    if (travel.user.toString() !== req.user._id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
     }
 
-    res.json({ data: updatedEntry });
+    // Punkte optional aktualisieren
+    if (req.body.points && Array.isArray(req.body.points)) {
+      travel.points = req.body.points;
+    }
+    if (req.body.startDate) travel.startDate = req.body.startDate;
+    if (req.body.endDate) travel.endDate = req.body.endDate;
+    if (req.body.photos) travel.photos = req.body.photos;
+
+    await travel.save();
+
+    res.json({ data: travel });
   } catch (err) {
     next(err);
   }
@@ -92,18 +91,16 @@ const deleteTravel = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const deletedEntry = await Travel.findByIdAndDelete(id).lean();
+    const travel = await Travel.findById(id);
+    if (!travel) return res.status(404).json({ message: "Eintrag nicht gefunden" });
 
-    if (!deletedEntry) {
-      return res.status(404).json({ message: "Eintrag nicht gefunden" });
+    // Prüfen, ob Self oder Admin
+    if (travel.user.toString() !== req.user._id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
     }
 
-    // Reise auch aus User entfernen
-    await User.findByIdAndUpdate(deletedEntry.user, {
-      $pull: { travels: deletedEntry._id },
-    });
-
-    res.json({ data: deletedEntry, message: "Eintrag erfolgreich gelöscht" });
+    await travel.remove();
+    res.json({ data: travel, message: "Eintrag erfolgreich gelöscht" });
   } catch (err) {
     next(err);
   }

@@ -53,7 +53,7 @@ const startServer = async () => {
   try {
     await connectDB();
     app.listen(port, () => {
-      console.log(chalk.bgGreen(`Server hört auf port ${port}`));
+      console.log(chalk.bgGreen(`Server listening on port ${port}`));
     });
   } catch (err) {
     console.log(chalk.bgRed("Server konnte nicht gestartet werden:"), err);

@@ -7,16 +7,12 @@ const travelSchema = new Schema({
     ref: "User",
     required: true,
   },
-  country: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  city: {
-    type: String,
-    required: true,
-    trim: true,
-  },
+  points: [
+    {
+      city: { type: String, required: true, trim: true },
+      country: { type: String, required: true, trim: true },
+    }
+  ],
   startDate: {
     type: Date,
     required: true,

@@ -74,8 +74,8 @@ const login = async (req, res, next) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure,
-      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production", // nur in Prod über HTTPS
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       expires: new Date(Date.now() + parseInt(process.env.JWT_EXPIRES_IN_DAYS) * 24 * 60 * 60 * 1000),
     });
 
