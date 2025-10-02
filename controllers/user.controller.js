@@ -73,4 +73,59 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-export { createUser, getAllUsers, getOneUser, updateOneUser, deleteUser };
+// Rolle ändern → Admin only
+const changeUserRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!["user", "admin"].includes(role)) {
+      return res.status(400).json({ message: "Ungültige Rolle" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (!user) return res.status(404).json({ message: "Benutzer nicht gefunden" });
+
+    res.json({ data: user, message: "Rolle erfolgreich geändert" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Routen eines Users abrufen → Admin only
+const getUserTravels = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id)
+      .select("username travels") // nur diese Felder ziehen
+      .populate({
+        path: "travels",
+        select: "points startDate endDate photos createdAt updatedAt", // nur relevante Felder aus Travel
+      })
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "Benutzer nicht gefunden" });
+    }
+
+    // Rückgabe: Username + Reisen
+    res.json({
+      user: {
+        _id: user._id,
+        username: user.username,
+      },
+      travels: user.travels || [],
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+export { createUser, getAllUsers, getOneUser, updateOneUser, deleteUser, changeUserRole, getUserTravels };

@@ -106,4 +106,19 @@ const deleteTravel = async (req, res, next) => {
   }
 };
 
-export { getTravels, getOneTravel, createTravel, updateTravel, deleteTravel };
+// Alle Reisen eines Users abrufen
+const getTravelsByUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const travels = await Travel.find({ user: userId })
+      .populate("user", "username role")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ data: travels });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export { getTravels, getOneTravel, createTravel, updateTravel, deleteTravel, getTravelsByUser };

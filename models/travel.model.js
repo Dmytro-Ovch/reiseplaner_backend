@@ -23,7 +23,8 @@ const travelSchema = new Schema({
   },
   photos : [
     { 
-    type: String,
+    city: { type: String, required: true },
+    urls: [{ type: String }],
     },
   ],
 },

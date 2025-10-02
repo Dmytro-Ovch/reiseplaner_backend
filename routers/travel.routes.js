@@ -5,6 +5,7 @@ import {
   createTravel,
   updateTravel,
   deleteTravel,
+  getTravelsByUser,
 } from "../controllers/travel.controller.js";
 import authenticate from "../middlewares/authenticate.js";
 
@@ -24,5 +25,8 @@ travelRouter.put("/:id", authenticate, updateTravel);
 
 // Reise löschen – nur Besitzer/Admin
 travelRouter.delete("/:id", authenticate, deleteTravel);
+
+// Alle Reisen eines bestimmten Users abrufen – nur Besitzer/Admin
+travelRouter.get("/user/:userId", authenticate, getTravelsByUser);
 
 export default travelRouter;
