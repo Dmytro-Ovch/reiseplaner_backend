@@ -3,6 +3,8 @@ import cookieParser from "cookie-parser";
 import chalk from "chalk";
 import cors from "cors";
 import mongoose from "mongoose";
+import fetch from "node-fetch";
+
 
 import userRouter from "./routers/user.routes.js";
 import travelRouter from "./routers/travel.routes.js";
@@ -15,9 +17,15 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cookieParser());
 
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "https://reiseplaner-frontend-tywn.onrender.com"
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
